@@ -5,19 +5,31 @@ module Password
   NUMBERS = [*0..9].freeze
   SPECIAL = %w(! @ £ $ % ^ & * #).freeze
 
-  def self.generate(length: DEFAULT_LENGTH)
-    remaining_characters = length
+  def self.generate(length: DEFAULT_LENGTH, lowercase: nil, uppercase: nil, numbers: nil, special: nil)
+    remaining_characters = length - lowercase.to_i - uppercase.to_i - numbers.to_i - special.to_i
 
-    lowercase_count = generate_character_count(remaining_characters)
-    remaining_characters -= lowercase_count
+    if lowercase
+      lowercase_count = lowercase
+    else
+      lowercase_count = generate_character_count(remaining_characters)
+      remaining_characters -= lowercase_count
+    end
 
-    uppercase_count = generate_character_count(remaining_characters)
-    remaining_characters -= uppercase_count
+    if uppercase
+      uppercase_count = uppercase
+    else
+      uppercase_count = generate_character_count(remaining_characters)
+      remaining_characters -= uppercase_count
+    end
 
-    numbers_count = generate_character_count(remaining_characters)
-    remaining_characters -= numbers_count
+    if numbers
+      numbers_count = numbers
+    else
+      numbers_count = generate_character_count(remaining_characters)
+      remaining_characters -= numbers_count
+    end
 
-    special_count = remaining_characters
+    special_count = special || remaining_characters
 
     characters = LOWERCASE.sample(lowercase_count) +
                  UPPERCASE.sample(uppercase_count) +
