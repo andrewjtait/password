@@ -67,6 +67,7 @@ module Password
 
   def self.generate_character_count(remaining_characters)
     return 0 if remaining_characters == 0
-    rand(1..remaining_characters)
+    max_total = (remaining_characters * 0.6).ceil
+    rand(1..max_total)
   end
 end
