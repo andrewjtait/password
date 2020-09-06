@@ -62,7 +62,20 @@ describe Password do
 
     it "returns a password with zero special characters" do
       password = Password.generate(special: 0)
-      _(password).must_equal "qeUOIXiRSHj085"
+      _(password).must_equal "VwiIJT9PjSEq061"
+    end
+  end
+
+  describe "multiple options" do
+    it "returns a password supporting all options" do
+      password = Password.generate(length: 12, lowercase: 3, uppercase: 3, numbers: 3, special: 3)
+      _(password).must_equal "9r*4XG&Rp8$d"
+    end
+
+    it "raises an error if options conflict with length" do
+      _(proc {
+        Password.generate(length: 11, lowercase: 3, uppercase: 3, numbers: 3, special: 3)
+      }).must_raise StandardError
     end
   end
 end
