@@ -112,6 +112,12 @@ describe Password do
       }).must_raise Password::InvalidOptionsError
     end
 
+    it "raises an error if an option is higher than length" do
+      _(proc {
+        Password.generate(length: 10, lowercase: 11)
+      }).must_raise Password::InvalidOptionsError
+    end
+
     it "raise an error for any invalid length value" do
       _(proc {
         Password.generate(length: 0)

@@ -39,6 +39,8 @@ module Password
         raise InvalidOptionsError if !count.is_a?(Integer) || count < 0
       end
 
+      raise InvalidOptionsError if remaining_character_count < 0
+
       # Populate any missing values:
       missing_counts = character_counts.select { |_, value| value.nil? }
       missing_counts.keys.each_with_index do |key, index|
