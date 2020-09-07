@@ -58,7 +58,7 @@ module Password
       #     has defined all possible options).
       #  3. The DEFAULT_LENGTH.
       if max_length.nil?
-        all_options_defined = character_counts.values.compact.length == 4
+        all_options_defined = !character_counts.values.any?(&:nil?)
 
         if all_options_defined || (current_total > DEFAULT_LENGTH)
           @max_length = current_total
