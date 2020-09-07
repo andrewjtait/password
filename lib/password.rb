@@ -1,94 +1,97 @@
 module Password
-  class InvalidOptions < StandardError
-    def message
-      "Options are not compatible for the current value of length."
-    end
+  class InvalidOptionsError < StandardError
   end
 
   DEFAULT_LENGTH = 15
 
-  # Character type sets:
   UPPERCASE = [*"A".."Z"].freeze
   LOWERCASE = [*"a".."z"].freeze
-  NUMBERS = [*0..9].freeze
-  SPECIAL = %w(@ % ! ? * ^ &).freeze
+  NUMBERS   = [*0..9].freeze
+  SPECIAL   = %w(@ % ! ? * ^ &).freeze
 
-  def self.generate(length: nil, lowercase: nil, uppercase: nil, numbers: nil, special: nil)
-    character_counts = populate_missing_counts({
-      lowercase: lowercase,
-      uppercase: uppercase,
-      numbers: numbers,
-      special: special,
-    }, length)
+  class << self
+    attr_reader :character_counts, :max_length
 
-    characters = generate_character_set(character_counts[:lowercase]) { LOWERCASE.sample } +
-                 generate_character_set(character_counts[:uppercase]) { UPPERCASE.sample } +
-                 generate_character_set(character_counts[:numbers]) { NUMBERS.sample } +
-                 generate_character_set(character_counts[:special]) { SPECIAL.sample }
+    def generate(length: nil, lowercase: nil, uppercase: nil, numbers: nil, special: nil)
+      @max_length = length
+      @character_counts = {
+        lowercase: lowercase,
+        uppercase: uppercase,
+        numbers: numbers,
+        special: special,
+      }
 
-    characters.shuffle.join
-  end
+      validate_length
+      validate_character_counts
 
-  # Fill in any nil values within the character_counts hash.
-  def self.populate_missing_counts(character_counts, max_length)
-    remaining_characters = calculate_remaining_characters(character_counts, max_length)
+      generate_characters.shuffle.join
+    end
 
-    # Raise an error if the total options are more than the defined length:
-    raise InvalidOptions if remaining_characters < 0
+    private
 
-    missing_counts = character_counts.select { |_, value| value.nil? }
-    missing_counts.keys.each_with_index do |key, index|
-      if index == missing_counts.keys.length - 1
-        # Use whatever characters are left if it is the last missing set:
-        character_counts[key] = remaining_characters
-      else
-        character_counts[key] = random_character_count(remaining_characters)
+    def validate_length
+      return if max_length.nil?
+      raise InvalidOptionsError if !max_length.is_a?(Integer) || max_length < 1
+    end
+
+    # Populate any nil values within the character_counts hash and validate them.
+    def validate_character_counts
+      # Raise an error if a value is not valid:
+      character_counts.values.compact.each do |count|
+        raise InvalidOptionsError if !count.is_a?(Integer) || count < 0
       end
 
-      remaining_characters -= character_counts[key]
+      # Populate any missing values:
+      missing_counts = character_counts.select { |_, value| value.nil? }
+      missing_counts.keys.each_with_index do |key, index|
+        last_item = (index == missing_counts.keys.length - 1)
+        character_counts[key] = last_item ? remaining_character_count : random_character_count
+      end
+
+      # Raise an error if the total options are less than or more than the defined length:
+      raise InvalidOptionsError if remaining_character_count != 0
     end
 
-    # Raise an error if the total options are less than the defined length:
-    raise InvalidOptions if remaining_characters > 0
+    # Remaining characters is based on the sum of current character counts subtracted
+    # from the max length.
+    def remaining_character_count
+      current_total = character_counts.values.compact.inject(0, :+)
 
-    character_counts
-  end
+      # Max length is based on:
+      #  1. The user defined length argument.
+      #  2. The total of user defined options (if higher than DEFAULT_LENGTH).
+      #  3. The DEFAULT_LENGTH.
+      if max_length.nil?
+        @max_length = (current_total > DEFAULT_LENGTH) ? current_total : DEFAULT_LENGTH
+      end
 
-  # Remaining characters is based on the total of user defined options subtracted
-  # from the max length.
-  #
-  # Max length is based on:
-  #  1. The user defined length argument.
-  #  2. The total of user defined options (if higher than DEFAULT_LENGTH).
-  #  3. The DEFAULT_LENGTH.
-  def self.calculate_remaining_characters(character_counts, max_length)
-    current_total = character_counts.values.compact.inject(0, :+)
-
-    if max_length.nil?
-      max_length = (current_total > DEFAULT_LENGTH) ? current_total : DEFAULT_LENGTH
+      max_length - current_total
     end
 
-    max_length - current_total
-  end
-
-  # Build an array of characters for the given length.
-  def self.generate_character_set(length)
-    set = []
-    while set.length < length
-      set << yield
+    # Build and join sets of characters for each character type.
+    def generate_characters
+      generate_character_set(character_counts[:lowercase]) { LOWERCASE.sample } +
+      generate_character_set(character_counts[:uppercase]) { UPPERCASE.sample } +
+      generate_character_set(character_counts[:numbers]) { NUMBERS.sample } +
+      generate_character_set(character_counts[:special]) { SPECIAL.sample }
     end
-    set
-  end
 
-  # Return a random number for how many characters to use for the current
-  # character type based on the remaining characters available.
-  def self.random_character_count(remaining_characters)
-    return 0 if remaining_characters == 0
+    # Build an array of characters for the given length.
+    def generate_character_set(length)
+      set = []
+      while set.length < length
+        set << yield
+      end
+      set
+    end
 
-    # Use a buffer on the remaining characters to ensure we get a good
-    # mixture of character types:
-    maximum = (remaining_characters * 0.6).ceil
-
-    rand(1..maximum)
+    # Return a random number for how many characters to use for the current
+    # character type based on the remaining characters available.
+    def random_character_count
+      # Reduce the maximum number a bit so that we have a better chance
+      # of a good mixture of character types:
+      maximum = (remaining_character_count * 0.6).ceil
+      rand(0..maximum)
+    end
   end
 end
