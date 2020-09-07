@@ -59,10 +59,17 @@ module Password
 
       # Max length is based on:
       #  1. The user defined length argument.
-      #  2. The total of user defined options (if higher than DEFAULT_LENGTH).
+      #  2. The total of user defined options (if higher than DEFAULT_LENGTH or user
+      #     has defined all possible options).
       #  3. The DEFAULT_LENGTH.
       if max_length.nil?
-        @max_length = (current_total > DEFAULT_LENGTH) ? current_total : DEFAULT_LENGTH
+        all_options_defined = character_counts.values.compact.length == 4
+
+        if all_options_defined || (current_total > DEFAULT_LENGTH)
+          @max_length = current_total
+        else
+          @max_length = DEFAULT_LENGTH
+        end
       end
 
       max_length - current_total

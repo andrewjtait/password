@@ -21,6 +21,11 @@ describe Password do
       password = Password.generate(special: 30)
       _(password).must_equal "*&^*&&&*@%%^@&^@?&%?@*^@?&!%?&"
     end
+
+    it "returns the length of user defined options if all are defined" do
+      password = Password.generate(lowercase: 2, uppercase: 0, numbers: 0, special: 0)
+      _(password).must_equal "do"
+    end
   end
 
   describe "lowercase" do
