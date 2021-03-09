@@ -1,6 +1,6 @@
 # Password
 
-A Ruby gem to generate a password.
+A Ruby gem to generate a password (this is just a coding exercise, and not indended to be used in any project).
 
 ## Installation
 
